@@ -1,0 +1,58 @@
+<div class="container mt-5">
+    <h2>Manage To-Dos for User</h2>
+    <button class="btn btn-primary mb-3" (click)="openAddTodo()">Add To-Do</button>
+  
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let todo of todos">
+          <td>{{ todo.title }}</td>
+          <td>{{ todo.dueDate | date }}</td>
+          <td>
+            <span [ngClass]="{'text-success': todo.status === 'Completed', 'text-danger': todo.status === 'Pending'}">
+              {{ todo.status }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-warning btn-sm" (click)="editTodo(todo)">Edit</button>
+            <button class="btn btn-danger btn-sm" (click)="deleteTodo(todo.id)">Delete</button>
+          </td>
+        </tr>
+        <tr *ngIf="todos.length === 0">
+          <td colspan="4" class="text-center">No To-Dos found.</td>
+        </tr>
+      </tbody>
+    </table>
+  
+    <!-- Add/Edit To-Do Form -->
+    <div *ngIf="showTodoForm">
+      <h3>{{ isEditMode ? 'Edit' : 'Add' }} To-Do</h3>
+      <form [formGroup]="todoForm" (ngSubmit)="submitTodoForm()">
+        <div class="form-group mb-3">
+          <label for="title">Title</label>
+          <input id="title" formControlName="title" class="form-control" />
+        </div>
+        <div class="form-group mb-3">
+          <label for="dueDate">Due Date</label>
+          <input id="dueDate" type="date" formControlName="dueDate" class="form-control" />
+        </div>
+        <div class="form-group mb-3">
+          <label for="status">Status</label>
+          <select id="status" formControlName="status" class="form-control">
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" type="submit">{{ isEditMode ? 'Update' : 'Add' }}</button>
+        <button class="btn btn-secondary ms-2" (click)="cancelTodoForm()">Cancel</button>
+      </form>
+    </div>
+  </div>
+  
