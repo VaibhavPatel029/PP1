@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Todo } from '../models/user.model';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../user.service';
 import { CommonModule } from '@angular/common';
 
@@ -23,11 +23,12 @@ export class TodoManagementComponent implements OnInit{
   constructor(
     private route: ActivatedRoute,
     private fb: FormBuilder,
-    private userService: UserService
+    private userService: UserService,
+    private router: Router
   ) {
     this.todoForm = this.fb.group({
-      title: ['', Validators.required],
-      dueDate: ['', Validators.required],
+      title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(15)]],
+      dueDate: ['', [Validators.required, this.dateWithinOneMonthValidator]],
       status: ['Pending', Validators.required]
     });
   }
@@ -41,11 +42,21 @@ export class TodoManagementComponent implements OnInit{
       }
     }
   }
-
+  goBack() {
+    this.router.navigate(['/users']);  // Navigate back to User List page
+  }
   openAddTodo() {
     this.showTodoForm = true;
     this.isEditMode = false;
     this.todoForm.reset({ status: 'Pending' });
+  }
+  // Custom validator to check if the date is within one month from today
+  dateWithinOneMonthValidator(control: any) {
+    const selectedDate = new Date(control.value);
+    const today = new Date();
+    const oneMonthFromToday = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
+    return selectedDate >= today && selectedDate <= oneMonthFromToday ? null : { dateOutOfRange: true };
   }
 
   editTodo(todo: Todo) {
