@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { Todo } from '../models/user.model';
+import { Todo, User } from '../models/user.model';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../user.service';
 import { CommonModule } from '@angular/common';
+import { TodoService } from '../todo.service';
 
 @Component({
   selector: 'app-todo-management',
@@ -24,7 +25,8 @@ export class TodoManagementComponent implements OnInit{
     private route: ActivatedRoute,
     private fb: FormBuilder,
     private userService: UserService,
-    private router: Router
+    private router: Router,
+    private todoService: TodoService
   ) {
     this.todoForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(15)]],
@@ -36,10 +38,14 @@ export class TodoManagementComponent implements OnInit{
   ngOnInit(): void {
     this.userId = Number(this.route.snapshot.paramMap.get('userId'));
     if (this.userId) {
-      const user = this.userService.getUserById(this.userId);
-      if (user) {
-        this.todos = user.todos || [];
-      }
+      this.todoService.getTodosByUserId(this.userId).subscribe(
+        (data: Todo[]) => {
+          this.todos = data;
+        },
+        error => {
+          console.error('Error loading todos:', error);
+        }
+      );
     }
   }
   goBack() {
@@ -66,20 +72,67 @@ export class TodoManagementComponent implements OnInit{
     this.todoForm.patchValue(todo);
   }
 
+  // deleteTodo(todoId: number) {
+  //   this.todos = this.todos.filter(todo => todo.id !== todoId);
+  // }
+
   deleteTodo(todoId: number) {
-    this.todos = this.todos.filter(todo => todo.id !== todoId);
+    this.todoService.deleteTodo(todoId).subscribe(
+      {next:() => {
+      this.todos = this.todos.filter(todo => todo.id !== todoId);
+    },
+    error:(error) => {
+      console.error('Error deleting todo:', error);
+    }
+    }
+      // {next:() => {
+      //   this.todos = this.todos.filter(todo => todo.id !== todoId);
+      // },
+      // error => {
+      //   console.error('Error deleting todo:', error);
+      // }}
+    );
   }
+
+  // submitTodoForm() {
+  //   if (this.todoForm.valid) {
+  //     const newTodo = { ...this.todoForm.value, id: this.isEditMode ? this.editingTodoId : Date.now() };
+  //     if (this.isEditMode) {
+  //       const index = this.todos.findIndex(todo => todo.id === this.editingTodoId);
+  //       if (index !== -1) this.todos[index] = newTodo;
+  //     } else {
+  //       this.todos.push(newTodo);
+  //     }
+  //     this.showTodoForm = false;
+  //   }
+  // }
 
   submitTodoForm() {
     if (this.todoForm.valid) {
-      const newTodo = { ...this.todoForm.value, id: this.isEditMode ? this.editingTodoId : Date.now() };
+      const todoData: Todo = { ...this.todoForm.value, userId: this.userId!, id: this.editingTodoId || 0 };
+      
       if (this.isEditMode) {
-        const index = this.todos.findIndex(todo => todo.id === this.editingTodoId);
-        if (index !== -1) this.todos[index] = newTodo;
+        this.todoService.updateTodo(todoData).subscribe(
+          (updatedTodo: Todo) => {
+            const index = this.todos.findIndex(todo => todo.id === updatedTodo.id);
+            if (index !== -1) this.todos[index] = updatedTodo;
+            this.showTodoForm = false;
+          },
+          error => {
+            console.error('Error updating todo:', error);
+          }
+        );
       } else {
-        this.todos.push(newTodo);
+        this.todoService.addTodo(todoData).subscribe(
+          (newTodo: Todo) => {
+            this.todos.push(newTodo);
+            this.showTodoForm = false;
+          },
+          error => {
+            console.error('Error adding todo:', error);
+          }
+        );
       }
-      this.showTodoForm = false;
     }
   }
 

@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { UserService } from '../user.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { User } from '../models/user.model';
+import { HttpClientModule } from '@angular/common/http';
 @Component({
   selector: 'app-user',
   standalone: true,
@@ -15,6 +16,7 @@ export class UserComponent implements OnInit{
   userForm: FormGroup;
   userId: number | null = null;
   isEditMode: boolean = false;
+  user: User | undefined;
 
   constructor(private fb: FormBuilder, private userService: UserService,private route: ActivatedRoute, private router: Router,) {
     this.userForm = this.fb.group({
@@ -33,12 +35,30 @@ export class UserComponent implements OnInit{
 
     if (this.isEditMode && id != '0') {
       this.userId = Number(id);
-      const user = this.userService.getUserById(this.userId);
-      if (user) {
-        this.userForm.patchValue(user);
-      }
+      this.userService.getUserById(this.userId).subscribe(
+        (data: User) => {
+          this.user = data;
+        },
+        error => {
+          console.error('Error fetching user:', error);
+        }
+      );
+      // const user = this.userService.getUserById(this.userId);
+      // if (user) {
+      //   this.userForm.patchValue(user);
+      // }
     }else{
       this.isEditMode = false; 
+      this.user = {
+        id: 0,
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        gender: '',
+        email: '',
+        status: 'Active',
+        todoCount: 0
+      };
     }
   }
   
@@ -46,26 +66,44 @@ export class UserComponent implements OnInit{
     if (this.userForm.valid) {
       if (this.isEditMode) {
         // Edit mode: Update existing user
-        const updatedUser: User = {
-          id: this.userId!,
-          ...this.userForm.value
-        };
-        this.userService.updateUser(updatedUser);
+        // const updatedUser: User = {
+        //   id: this.userId!,
+        //   ...this.userForm.value
+        // };
+        // this.userService.updateUser(updatedUser);
+        this.userService.updateUser(this.user as User).subscribe(
+          () => {
+            this.router.navigate(['/users']);
+          },
+          error => {
+            console.error('Error updating user:', error);
+          }
+        );
       } else {
         // Add mode: Add new user
-        const newId = this.generateNewId();
-        const newUser: User = {
-          id: newId,
-          ...this.userForm.value
-        };
-        this.userService.addUser(newUser);
+        // const newId = this.generateNewId();
+        // const newUser: User = {
+        //   id: newId,
+        //   ...this.userForm.value
+        // };
+        // this.userService.addUser(newUser);
+
+        this.userService.addUser(this.user as User).subscribe(
+          () => {
+            this.router.navigate(['/users']);
+          },
+          error => {
+            console.error('Error adding user:', error);
+          }
+        );
+
       }
-      this.router.navigate(['/users']);  // Navigate back to the user list
+      //this.router.navigate(['/users']);  // Navigate back to the user list
     }
   }
-  private generateNewId(): number {
-    const users = this.userService.getUsers();
-    const maxId = users.reduce((acc, user) => (user.id > acc ? user.id : acc), 0);
-    return maxId + 1;
-  }
+  // private generateNewId(): number {
+  //   const users = this.userService.getUsers();
+  //   const maxId = users.reduce((acc, user) => (user.id > acc ? user.id : acc), 0);
+  //   return maxId + 1;
+  // }
 }

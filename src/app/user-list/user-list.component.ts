@@ -24,17 +24,17 @@ export class UserListComponent {
   }
 
   loadUsers() {
-    this.users = this.userService.getUsers();
-    this.applyFilter();  // Apply initial filter on load
+    //this.users = this.userService.getUsers();
 
-    // this.userService.getUsers().subscribe(
-    //   (data: User[]) => {
-    //     this.users = data;
-    //   },
-    //   (error) => {
-    //     console.error('Error fetching users:', error);
-    //   }
-    // );
+    this.userService.getUsers().subscribe(
+      (data: User[]) => {
+        this.users = data;
+      },
+      (error) => {
+        console.error('Error fetching users:', error);
+      }
+    );
+    this.applyFilter();  // Apply initial filter on load
   }
   addUser() {
     this.router.navigate(['/user',0]); // Navigate to UserComponent with empty form for adding a new user
@@ -49,12 +49,27 @@ export class UserListComponent {
     // Navigate to the to-do management page for the user
     this.router.navigate(['/todos', userId]);
   }
-  deleteUser(userId: number) {
+
+   // Delete user and refresh the list
+   deleteUser(userId: number) {
     if (confirm('Are you sure you want to delete this user?')) {
-      this.userService.deleteUser(userId);
-      this.loadUsers();  // Refresh the list after deletion
+      this.userService.deleteUser(userId).subscribe(
+        () => {
+          this.users = this.users.filter(user => user.id !== userId);
+        },
+        error => {
+          console.error('Error deleting user:', error);
+        }
+      );
     }
   }
+
+  // deleteUser(userId: number) {
+  //   if (confirm('Are you sure you want to delete this user?')) {
+  //     this.userService.deleteUser(userId);
+  //     this.loadUsers();  // Refresh the list after deletion
+  //   }
+  // }
   applyFilter() {
     switch (this.selectedFilter) {
       case 'lessThan5':
